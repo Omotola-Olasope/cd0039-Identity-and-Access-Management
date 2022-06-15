@@ -4,9 +4,10 @@ from functools import wraps
 from jose import jwt
 from urllib.request import urlopen
 
+
 AUTH0_DOMAIN = 'omotola-olasope.us.auth0.com'
 ALGORITHMS = ['RS256']
-API_AUDIENCE = 'http://127.0.0.1:5000/drinks'
+API_AUDIENCE = 'drinks'
 
 class AuthError(Exception):
     def __init__(self, error, status_code):
@@ -14,17 +15,21 @@ class AuthError(Exception):
         self.status_code = status_code
 
 
-def get_token_auth_header():
-    if 'Authorization' not in request.headers:
-        abort(401)
-
-    auth_header = request.headers['Authorization']
+def get_token_auth_header():    
+    auth_header = request.headers.get("Authorization")
     header_parts = auth_header.split(' ')
+
+    if not auth_header:
+        abort(401)
 
     if len(header_parts) != 2:
         abort(401)
     elif header_parts[0].lower() != 'bearer':
         abort(401)
+
+    token = header_parts[1]
+
+    return token
 
 def check_permissions(permission, payload):      
 
@@ -63,7 +68,7 @@ def verify_decode_jwt(token):
                 token,
                 rsa_key,
                 algorithms=ALGORITHMS,
-                audience=API_AUDIENCE,
+                audience='drinks',
                 issuer='https://' + AUTH0_DOMAIN + '/'
             )
 
@@ -99,6 +104,9 @@ def requires_auth(permission=''):
                 payload = verify_decode_jwt(token)
             except:
                 abort(401)
+
+            check_permissions(permission, payload)
+
             return f(payload, *args, **kwargs)
         return wrapper
     return requires_auth_decorator

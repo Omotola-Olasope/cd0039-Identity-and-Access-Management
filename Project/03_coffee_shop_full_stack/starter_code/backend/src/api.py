@@ -4,12 +4,13 @@ from sqlalchemy import exc
 import json
 from flask_cors import CORS
 
+
 from .database.models import db_drop_and_create_all, setup_db, Drink
 from .auth.auth import AuthError, requires_auth
 
 app = Flask(__name__)
 setup_db(app)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app)
 
 '''
 @TODO uncomment the following line to initialize the datbase
@@ -29,23 +30,14 @@ db_drop_and_create_all()
         or appropriate status code indicating reason for failure
 '''
 
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
-    return response
-
 @app.route('/drinks')
 def get_drinks(): 
     all_drinks = Drink.query.all()
-    try:
-        return jsonify({
-            'success': True,
-            'drinks': [drink.short for drink in all_drinks]
-        }), 200
-
-    except:
-        abort(404)
+    
+    return jsonify({
+        'success': True,
+        'drinks': [drink.short() for drink in all_drinks]
+    }), 200
 
 
 '''
@@ -61,15 +53,11 @@ def get_drinks():
 @requires_auth('get:drinks-detail')
 def get_drinks_detail(payload):
     drink_detail = Drink.query.all()
-    try:
-        return jsonify({
-            'success': True,
-            'drinks': [drink.long() for drink in drink_detail]
-        }), 200
-
-    except:
-        abort(404)
-
+    
+    return jsonify({
+        'success': True,
+        'drinks': [drink.long() for drink in drink_detail]
+    }), 200
 
 
 '''
@@ -204,13 +192,13 @@ def bad_request(error):
         "message": "bad request"
     }), 400
 
-@app.errorhandler(401)
-def unauthorized(error):
-    return jsonify({
-        "success": False,
-        "error": 401,
-        "message": 'Unathorized'
-    }), 401
+# @app.errorhandler(401)
+# def unauthorized(error):
+#     return jsonify({
+#         "success": False,
+#         "error": 401,
+#         "message": 'Unathorized'
+#     }), 401
 
 @app.errorhandler(404)
 def not_found(error):
